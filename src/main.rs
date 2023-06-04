@@ -22,16 +22,13 @@ fn main() {
     if !target_dir.exists() {
         std::fs::create_dir(target_dir).expect("someone created the target directory before us");
     }
-    copy_dir(source_dir, target_dir, 0).unwrap();
+    copy_dir(source_dir, target_dir).unwrap();
 
 
 
 }
 
-fn copy_dir(source: &path::Path, target: &path::Path, depth: i32) -> Result<(), String> {
-    if depth > 4 {
-        return Err(format!("too deep"));
-    }
+fn copy_dir(source: &path::Path, target: &path::Path) -> Result<(), String> {
     println!("copying dir {} to {}", source.display(), target.display());
     for (_i, entry) in fs::read_dir(source).unwrap().enumerate() {
         let entry_path_buf = entry.unwrap().path();
@@ -40,7 +37,7 @@ fn copy_dir(source: &path::Path, target: &path::Path, depth: i32) -> Result<(), 
         let target_path = target_path_buf.as_path();
         if entry_path.is_dir() {
             fs::create_dir(target_path).expect(format!("failed to create directory: {}", target_path.display()).as_str());
-            copy_dir(entry_path, target_path, depth + 1)?;
+            copy_dir(entry_path, target_path)?;
         }
         else if entry_path.is_file() {
             fs::hard_link(entry_path, target_path).expect(format!("failed to hard link file: {}", entry_path.display()).as_str());
