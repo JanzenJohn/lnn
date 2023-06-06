@@ -27,7 +27,7 @@ fn main() {
 }
 
 fn copy_dir(source: &PathBuf, target: &PathBuf) -> Result<(), std::io::Error> {
-    for entry in fs::read_dir(source).unwrap() {
+    for entry in fs::read_dir(source)? {
         let entry = entry.unwrap();
         let target = target.join(entry.file_name());
 
