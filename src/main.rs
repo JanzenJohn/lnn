@@ -1,48 +1,54 @@
-use std::env;
-use std::path;
+use clap::Parser;
 use std::fs;
+use std::path::PathBuf;
+
+/// A tool to hardcopy directories
+#[derive(Parser, Debug)]
+struct Args {
+    /// The source file/directory
+    source: PathBuf,
+    /// The target file/directory (defaults to .)
+    target: Option<PathBuf>,
+    /// Skip unknown files
+    #[arg(short, long)]
+    skip_unknown: bool,
+}
 
 fn main() {
-    let default_str = ".".to_string();
-    let args = env::args().collect::<Vec<String>>();
-    let source = args.get(1).expect("No source provided");
-    let target = args.get(2).unwrap_or(&default_str);
+    let args = Args::parse();
 
-    let source_dir = std::path::Path::new(&source);
-    let target_dir = std::path::Path::new(&target);
-    if !source_dir.exists() {
-        eprintln!("Source directory does not exist");
-        return;
-    }
+    let source_dir = args.source;
+    let target_dir = args.target.unwrap_or(".".into());
+
     if !source_dir.is_dir() {
-        eprintln!("Source is not a directory");
+        eprintln!("Could not read source directory {}", source_dir.display());
         return;
     }
 
     if !target_dir.exists() {
-        std::fs::create_dir(target_dir).expect("someone created the target directory before us");
+        fs::create_dir(&target_dir).expect("Failed to create target directory")
     }
-    copy_dir(source_dir, target_dir).unwrap();
 
-
-
+    copy_dir(&source_dir, &target_dir, args.skip_unknown)
+        .map_err(|e| println!("Linking failed: {}", e))
+        .unwrap();
 }
 
-fn copy_dir(source: &path::Path, target: &path::Path) -> Result<(), String> {
-    println!("copying dir {} to {}", source.display(), target.display());
-    for (_i, entry) in fs::read_dir(source).unwrap().enumerate() {
-        let entry_path_buf = entry.unwrap().path();
-        let entry_path = entry_path_buf.as_path();
-        let target_path_buf = target.join(entry_path.file_name().unwrap());
-        let target_path = target_path_buf.as_path();
-        if entry_path.is_dir() {
-            fs::create_dir(target_path).expect(format!("failed to create directory: {}", target_path.display()).as_str());
-            copy_dir(entry_path, target_path)?;
-        }
-        else if entry_path.is_file() {
-            fs::hard_link(entry_path, target_path).expect(format!("failed to hard link file: {}", entry_path.display()).as_str());
+fn copy_dir(source: &PathBuf, target: &PathBuf, skip_unknown: bool) -> Result<(), std::io::Error> {
+    for entry in fs::read_dir(source)? {
+        let entry = entry?;
+        let target = target.join(entry.file_name());
+
+        if entry.path().is_dir() {
+            fs::create_dir(&target)?;
+            copy_dir(&entry.path(), &target, skip_unknown)?;
+        } else if entry.path().is_file() {
+            println!("linking {} -> {}", source.display(), target.display());
+            fs::hard_link(entry.path(), target)?;
+        } else if skip_unknown {
+            println!("Unkown file, skipping: {}", entry.path().display());
         } else {
-            return Err(format!("unknown file type: {}", entry_path.display()));
+            return Err(std::io::ErrorKind::Other.into());
         }
     }
     Ok(())
