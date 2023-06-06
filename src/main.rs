@@ -48,7 +48,8 @@ fn copy_dir(source: &PathBuf, target: &PathBuf, skip_unknown: bool) -> Result<()
         } else if skip_unknown {
             println!("Unkown file, skipping: {}", entry.path().display());
         } else {
-            return Err(std::io::ErrorKind::Other.into());
+            eprintln!("Uknown file: {}", entry.path().display());
+            return Err(std::io::ErrorKind::Unsupported.into());
         }
     }
     Ok(())
