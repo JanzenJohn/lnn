@@ -12,6 +12,7 @@ build() {
     git clone https://github.com/JanzenJohn/lnn
     cd lnn
     cargo build --release
+    ./test.sh
 }
 
 package() {
