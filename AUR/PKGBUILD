@@ -1,0 +1,20 @@
+pkgname="lnn"
+pkgver="0.1.0"
+pkgrel=1
+pkgdesc="A tool to hardcopy directories"
+arch=("any")
+url="https://github.com/JanzenJohn/lnn"
+license=("GPL")
+makedepends=("rust" "git")
+
+
+build() {
+    git clone https://github.com/JanzenJohn/lnn
+    cd lnn
+    cargo build --release
+}
+
+package() {
+    mkdir -p $pkgdir/usr/bin
+    cp lnn/target/release/lnn $pkgdir/usr/bin/lnn
+}
