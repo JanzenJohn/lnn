@@ -22,16 +22,18 @@ fn main() {
 
     if !source_dir.is_dir() {
         eprintln!("Could not read source directory {}", source_dir.display());
-        return;
+        std::process::exit(1);
     }
 
     if !target_dir.exists() {
         fs::create_dir(&target_dir).expect("Failed to create target directory")
     }
 
-    copy_dir(&source_dir, &target_dir, args.skip_unknown)
-        .map_err(|e| println!("Linking failed: {}", e))
-        .unwrap();
+    match copy_dir(&source_dir, &target_dir, args.skip_unknown){
+        Ok(()) => 0,
+        Err(_error) => {eprintln!("FAILED WITH ERROR ABOVE"); std::process::exit(1);}
+    };
+
 }
 
 fn copy_dir(source: &PathBuf, target: &PathBuf, skip_unknown: bool) -> Result<(), std::io::Error> {
