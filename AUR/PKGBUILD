@@ -5,17 +5,18 @@ pkgdesc="A tool to hardcopy directories"
 arch=("any")
 url="https://github.com/JanzenJohn/lnn"
 license=("GPL")
-makedepends=("rust" "git")
+makedepends=("rust" "git" "wget" "tar")
 
 
 build() {
-    git clone https://github.com/JanzenJohn/lnn
-    cd lnn
+    wget "https://github.com/JanzenJohn/lnn/archive/refs/tags/$pkgver.tar.gz"
+    tar -xf "$pkgver.tar.gz"
+    cd lnn-$pkgver
     cargo build --release
     ./test.sh
 }
 
 package() {
     mkdir -p $pkgdir/usr/bin
-    cp lnn/target/release/lnn $pkgdir/usr/bin/lnn
+    cp lnn-$pkgver/target/release/lnn $pkgdir/usr/bin/lnn
 }
