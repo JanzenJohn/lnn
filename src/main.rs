@@ -28,7 +28,7 @@ fn main() {
 
     if !source_dir.is_dir() {
         eprintln!(
-            "[ERROR ]Could not read source directory {}",
+            "[ERROR] Could not read source directory {}",
             source_dir.display()
         );
         std::process::exit(1);
