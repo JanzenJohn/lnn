@@ -27,19 +27,29 @@ fn main() {
     let target_dir = args.target.unwrap_or(".".into());
 
     if !source_dir.is_dir() {
-        eprintln!("Could not read source directory {}", source_dir.display());
+        eprintln!(
+            "[ERROR] Could not read source directory {}",
+            source_dir.display()
+        );
         std::process::exit(1);
     }
 
     if !target_dir.exists() {
-        fs::create_dir(&target_dir).expect("Failed to create target directory")
+        fs::create_dir(&target_dir).expect("[ERROR] Failed to create target directory")
     }
 
-    match copy_dir(&source_dir, &target_dir, args.skip_unknown){
+    match copy_dir(&source_dir, &target_dir, args.skip_unknown) {
         Ok(()) => 0,
-        Err(_error) => {eprintln!("FAILED WITH ERROR ABOVE"); std::process::exit(1);}
+        Err(e) => {
+            eprintln!(
+                "[ERROR] Failed to link {} to {}:\n{:#?}",
+                &source_dir.display(),
+                &target_dir.display(),
+                e
+            );
+            std::process::exit(1);
+        }
     };
-
 }
 
 fn copy_dir(source: &PathBuf, target: &PathBuf, skip_unknown: bool) -> Result<(), std::io::Error> {
@@ -54,9 +64,12 @@ fn copy_dir(source: &PathBuf, target: &PathBuf, skip_unknown: bool) -> Result<()
             println!("linking {} -> {}", source.display(), target.display());
             fs::hard_link(entry.path(), target)?;
         } else if skip_unknown {
-            println!("Unkown file, skipping: {}", entry.path().display());
+            println!(
+                "[WARNING] Unkown file, skipping: {}",
+                entry.path().display()
+            );
         } else {
-            eprintln!("Uknown file: {}", entry.path().display());
+            eprintln!("[ERROR] Uknown file: {}", entry.path().display());
             return Err(std::io::ErrorKind::Unsupported.into());
         }
     }
