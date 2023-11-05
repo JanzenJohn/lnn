@@ -6,8 +6,7 @@ use std::path::PathBuf;
 /// Copyright (C) 2023  John Janzen{n}
 /// This program is free software: you can redistribute it and/or modify{n}
 /// it under the terms of the GNU General Public License as published by{n}
-/// the Free Software Foundation, either version 3 of the License, or{n}
-/// (at your option) any later version.
+/// the Free Software Foundation{n}
 #[derive(Parser, Debug)]
 #[command(version)]
 struct Args {
@@ -18,6 +17,9 @@ struct Args {
     /// Skip unknown files
     #[arg(short, long)]
     skip_unknown: bool,
+    /// Skip existing files
+    #[arg(short='i', long)]
+    skip_existing: bool,
 }
 
 fn main() {
@@ -38,7 +40,7 @@ fn main() {
         fs::create_dir(&target_dir).expect("[ERROR] Failed to create target directory")
     }
 
-    match copy_dir(&source_dir, &target_dir, args.skip_unknown) {
+    match copy_dir(&source_dir, &target_dir, args.skip_unknown, args.skip_existing) {
         Ok(()) => 0,
         Err(e) => {
             eprintln!(
@@ -52,14 +54,16 @@ fn main() {
     };
 }
 
-fn copy_dir(source: &PathBuf, target: &PathBuf, skip_unknown: bool) -> Result<(), std::io::Error> {
+fn copy_dir(source: &PathBuf, target: &PathBuf, skip_unknown: bool, skip_existing: bool) -> Result<(), std::io::Error> {
     for entry in fs::read_dir(source)? {
         let entry = entry?;
         let target = target.join(entry.file_name());
 
         if entry.path().is_dir() {
             fs::create_dir(&target)?;
-            copy_dir(&entry.path(), &target, skip_unknown)?;
+            copy_dir(&entry.path(), &target, skip_unknown, skip_existing)?;
+        } else if entry.path().is_file() && entry.path().exists() && skip_existing {
+            println!("skipping {} already exists", target.display());
         } else if entry.path().is_file() {
             println!("linking {} -> {}", source.display(), target.display());
             fs::hard_link(entry.path(), target)?;
